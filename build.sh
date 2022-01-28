@@ -23,4 +23,4 @@ buildah config --cmd "/usr/sbin/squid --foreground -d 5" "$ctr1"
 buildah config --port 3128 "$ctr1"
 
 ## Commit this container to an image name
-buildah commit "$ctr1" "${2:-$USER/rpm-mirror}"
+buildah commit "$ctr1" quay.io/gleboude/rpm-mirror

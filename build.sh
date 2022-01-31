@@ -23,4 +23,9 @@ buildah config --cmd "/usr/sbin/squid --foreground -d 5" "$ctr1"
 buildah config --port 3128 "$ctr1"
 
 ## Commit this container to an image name
+buildah commit "$ctr1" rpm-mirror-test
+podman run --name rpm-mirror-test -d -p 127.0.0.1:3128:3128 rpm-mirror-test
+https_proxy=127.0.0.1:3128 curl --head https://linuxfr.org && false
+http_proxy=127.0.0.1:3128 curl curl http://somewhere.org/pub/fedora/linux/releases/35/Everything/x86_64/os/repodata/repomd.xml|grep http://linux.duke.edu/metadata/repo
+podman stop rpm-mirror-test
 buildah commit "$ctr1" quay.io/gleboude/rpm-mirror

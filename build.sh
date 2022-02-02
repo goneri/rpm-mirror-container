@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-
+podman stop rpm-mirror-test
+podman rm rpm-mirror-test
 set -eux
 
 ctr1=$(buildah from "${1:-registry.fedoraproject.org/fedora}")
@@ -25,7 +26,12 @@ buildah config --port 3128 "$ctr1"
 ## Commit this container to an image name
 buildah commit "$ctr1" rpm-mirror-test
 podman run --name rpm-mirror-test -d -p 127.0.0.1:3128:3128 rpm-mirror-test
-https_proxy=127.0.0.1:3128 curl --head https://linuxfr.org && false
-http_proxy=127.0.0.1:3128 curl curl http://somewhere.org/pub/fedora/linux/releases/35/Everything/x86_64/os/repodata/repomd.xml|grep http://linux.duke.edu/metadata/repo
+# No open access to any HTTPS website
+(https_proxy=127.0.0.1:3128 curl --silent --head --fail-with-body https://linuxfr.org || true)|grep 403
+# Properly rewrite mirror URL
+http_proxy=127.0.0.1:3128 curl --retry 3 http://somewhere.org/pub/fedora/linux/releases/35/Everything/x86_64/os/repodata/repomd.xml|grep http://linux.duke.edu/metadata/repo
+# Redirect generic traffic
+http_proxy=127.0.0.1:3128 curl --head http://www.example.com |egrep 'Location:.*www.ansible.com'
 podman stop rpm-mirror-test
 buildah commit "$ctr1" quay.io/gleboude/rpm-mirror
+echo "done"
